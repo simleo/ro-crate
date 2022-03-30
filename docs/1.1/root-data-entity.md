@@ -69,9 +69,31 @@ property referencing the _Root Data Entity_, which SHOULD have an `@id` of `./`.
 ```
 
 The [conformsTo] of the _RO-Crate Metadata File Descriptor_ 
-SHOULD be a versioned permalink URI of the RO-Crate specification
+indicates conformance to a version of the RO-Crate specification and,
+optionally, to one or more [RO-Crate profiles](../profiles.md). It
+SHOULD include a versioned permalink URI of the RO-Crate specification
 that the _RO-Crate JSON-LD_ conforms to. The URI SHOULD 
-start with `https://w3id.org/ro/crate/`. 
+start with `https://w3id.org/ro/crate/`. The following example shows
+how to specify conformance to the RO-Crate specification and to the
+[Workflow RO-Crate profile](../profiles.md#workflow-ro-crate-profile):
+
+```json
+{
+    "@context": "https://w3id.org/ro/crate/1.1/context",
+    "@graph": [
+        {
+            "@id": "ro-crate-metadata.json",
+            "@type": "CreativeWork",
+            "about": {"@id": "./"},
+            "conformsTo": [
+                {"@id": "https://w3id.org/ro/crate/1.1"},
+                {"@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"}
+            ]
+        },
+        ...
+    ]
+}
+```
 
 ### Finding the Root Data Entity
 
