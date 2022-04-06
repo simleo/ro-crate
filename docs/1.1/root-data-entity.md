@@ -101,10 +101,66 @@ Consumers processing the RO-Crate as an JSON-LD graph can thus reliably find
 the _Root Data Entity_ by following this algorithm:
 
 1. For each entity in `@graph` array
-2. ..if the `conformsTo` property is a URI that starts with `https://w3id.org/ro/crate/`
+2. .. if the `@id` is a URI whose last path segment is `ro-crate-metadata.json`
 3. ....from this entity's `about` object keep the `@id` URI as variable _root_
 4. For each entity in `@graph` array
 5. .. if the entity has an `@id` URI that matches _root_ return it
+
+Note that the above can be implemented efficiently by first building a map of
+all entities using their `@id` as keys (which is typically also helpful for
+further processing). In the "standard" case where the metadata descriptor id
+is simply `ro-crate-metadata.json`:
+
+```python
+metadata_entity = entity_map["ro-crate-metadata.json"]
+root_entity = entity_map[metadata["about"]["@id"]]
+```
+
+In the more general case, where the metadata id is a URI ending in
+`ro-crate-metadata.json`, an additional entity map can be built using the last
+path segment of each id as the key and the set of corresponding ids as the
+value. In most cases there will be only one such URI, so the search ends with
+two simple lookups as before. Things get a bit complicated when there is more
+than one candidate URI, for instance in the case of nested crates:
+
+```json
+{
+    "@context": "https://w3id.org/ro/crate/1.1/context",
+    "@graph": [
+        {
+            "@id": "https://example.org/crate/ro-crate-metadata.json",
+            "@type": "CreativeWork",
+            "about": {"@id": "https://example.org/crate"},
+            "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"}
+        },
+        {
+            "@id": "https://example.org/crate",
+            "@type": "Dataset",
+            "hasPart": [
+                {"@id": "https://example.org/crate/nested"},
+                {"@id": "https://example.org/crate/nested/ro-crate-metadata.json"}
+            ],
+        },
+        {
+            "@id": "https://example.org/crate/nested/ro-crate-metadata.json",
+            "@type": "CreativeWork",
+            "about": {"@id": "https://example.org/crate/nested"},
+            "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"}
+        },
+        {
+            "@id": "https://example.org/crate/nested",
+            "@type": "Dataset",
+            "hasPart": [{"@id": "https://example.org/crate/nested/foo.txt"}]
+        },
+        {
+            "@id": "https://example.org/crate/nested/foo.txt",
+            "@type": "File"
+        }
+    ]
+}
+```
+
+In the above case, there are two candidates: `https://example.org/crate/ro-crate-metadata.json` and `https://example.org/crate/nested/ro-crate-metadata.json`. However, the former is `about` a dataset that contains (`hasPart`) the latter, but the opposite is not true. Thus, `https://example.org/crate` is the actual root dataset.
 
 See also the appendix on
 [finding RO-Crate Root in RDF triple stores](appendix/relative-uris.md#finding-ro-crate-root-in-rdf-triple-stores).
